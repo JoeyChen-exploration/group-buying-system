@@ -109,7 +109,7 @@ export default function ProductForm({ productId }: Props) {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
+    <div className="max-w-6xl mx-auto px-4 py-6">
       <div className="flex items-center gap-3 mb-6">
         <button onClick={() => router.back()} className="text-gray-400 hover:text-gray-700 text-sm">← 返回</button>
         <h1 className="text-xl font-bold text-gray-900">{isEdit ? "编辑商品" : "新建商品"}</h1>
