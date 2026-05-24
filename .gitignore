@@ -41,3 +41,7 @@ next-env.d.ts
 # prisma
 prisma/migrations/dev.db
 prisma/migrations/dev.db-journal
+
+# planning docs (not part of codebase)
+Plan.md
+SRS_and_Plan/
