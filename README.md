@@ -99,13 +99,18 @@ prisma/
 
 ## 开发阶段
 
-| Phase | 内容 | 状态 |
+| Branch | 内容 | 状态 |
 |---|---|---|
-| Phase 1 | 基础官网与常规自提订单 | 进行中 |
-| Phase 2 | 优惠日专区（活动管理、库存、限购） | 待开始 |
-| Phase 3 | 优惠日配送（区域起送规则） | 待开始 |
-| Phase 4 | 后台统计、导出与归档 | 待开始 |
-| Phase 5 | 扩展预留（英文版、在线支付、会员） | 预留 |
+| `feature/project-setup` | Next.js 初始化、Prisma schema、数据库迁移、环境配置 | ✅ 已完成 |
+| `feature/auth` | 注册、登录、JWT session、角色权限中间件 | 进行中 |
+| `feature/products-admin` | 后台商品/分类 CRUD、图片上传 | 待开始 |
+| `feature/products-customer` | 顾客端产品列表、商品详情 | 待开始 |
+| `feature/cart-checkout` | 购物车、常规自提订单 | 待开始 |
+| `feature/order-management` | 后台订单管理、状态流转 | 待开始 |
+| `feature/deal-day-admin` | 优惠日活动管理、优惠商品配置 | 待开始 |
+| `feature/deal-day-customer` | 优惠日专区、库存扣减、剩余数量展示 | 待开始 |
+| `feature/delivery` | 配送规则、区域起送金额校验、混合订单配送资格 | 待开始 |
+| `feature/reporting` | 订单导出、归档、销售统计仪表盘 | 待开始 |
 
 ## 核心业务规则
 
