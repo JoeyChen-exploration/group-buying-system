@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import BackToDashboard from "@/components/admin/BackToDashboard";
 
 const navItems = [
-  { label: "仪表盘", href: "/admin/dashboard" },
   { label: "订单", href: "/admin/orders" },
   { label: "商品", href: "/admin/products" },
   { label: "分类", href: "/admin/categories" },
@@ -51,6 +51,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </div>
       </header>
 
+      <div className="max-w-6xl mx-auto px-4 pt-4">
+        <BackToDashboard />
+      </div>
       <main>{children}</main>
     </div>
   );
