@@ -119,7 +119,7 @@ prisma/
 |---|---|---|
 | `feature/project-setup` | Next.js 初始化、Prisma schema、数据库迁移、环境配置 | ✅ 已完成 |
 | `feature/auth` | 注册、登录、邮箱 OTP 验证、JWT session、角色权限中间件 | ✅ 已完成 |
-| `feature/products-admin` | 后台商品/分类 CRUD、图片上传 | 进行中 |
+| `feature/products-admin` | 后台商品/分类 CRUD、图片上传 | ✅ 已完成 |
 | `feature/products-customer` | 顾客端产品列表、商品详情 | 待开始 |
 | `feature/cart-checkout` | 购物车、常规自提订单 | 待开始 |
 | `feature/order-management` | 后台订单管理、状态流转 | 待开始 |
