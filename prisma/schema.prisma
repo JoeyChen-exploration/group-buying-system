@@ -1,0 +1,250 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  customer
+  staff
+  admin
+}
+
+enum ProductStatus {
+  active
+  inactive
+  archived
+}
+
+enum OrderType {
+  regular
+  deal_day
+  mixed
+}
+
+enum OrderStatus {
+  pending
+  confirmed
+  preparing
+  ready
+  completed
+  cancelled
+}
+
+enum FulfillmentMethod {
+  pickup
+  delivery
+}
+
+enum PaymentMethod {
+  cash
+  bank_transfer
+  other
+}
+
+enum PaymentStatus {
+  unpaid
+  paid
+  refunded
+}
+
+enum DealDayItemStatus {
+  active
+  sold_out
+  disabled
+}
+
+// ─── Models ───────────────────────────────────────────────────────────────────
+
+model User {
+  id                  String    @id @default(cuid())
+  name                String
+  phone               String    @unique
+  email               String?   @unique
+  passwordHash        String    @map("password_hash")
+  role                UserRole  @default(customer)
+  deliveryArea        String?   @map("delivery_area")
+  addressDetail       String?   @map("address_detail")
+  languagePreference  String    @default("zh") @map("language_preference")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  orders              Order[]
+  createdDealDays     DealDay[] @relation("DealDayCreatedBy")
+
+  @@map("users")
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  nameZh      String    @map("name_zh")
+  nameEn      String?   @map("name_en")
+  sortOrder   Int       @default(0) @map("sort_order")
+  isVisible   Boolean   @default(true) @map("is_visible")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  products    Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id            String        @id @default(cuid())
+  nameZh        String        @map("name_zh")
+  nameEn        String?       @map("name_en")
+  descriptionZh String?       @map("description_zh")
+  descriptionEn String?       @map("description_en")
+  categoryId    String        @map("category_id")
+  images        String[]
+  basePrice     Decimal       @map("base_price") @db.Decimal(10, 2)
+  status        ProductStatus @default(active)
+  isHidden      Boolean       @default(false) @map("is_hidden")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  category      Category        @relation(fields: [categoryId], references: [id])
+  variants      ProductVariant[]
+  dealDayItems  DealDayItem[]
+  orderItems    OrderItem[]
+
+  @@map("products")
+}
+
+model ProductVariant {
+  id           String        @id @default(cuid())
+  productId    String        @map("product_id")
+  nameZh       String        @map("name_zh")
+  size         String?
+  flavor       String?
+  filling      String?
+  extraOptions Json?         @map("extra_options")
+  priceDelta   Decimal       @default(0) @map("price_delta") @db.Decimal(10, 2)
+  status       ProductStatus @default(active)
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  product      Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  dealDayItems DealDayItem[]
+  orderItems   OrderItem[]
+
+  @@map("product_variants")
+}
+
+model DealDay {
+  id                   String    @id @default(cuid())
+  titleZh              String    @map("title_zh")
+  titleEn              String?   @map("title_en")
+  descriptionZh        String?   @map("description_zh")
+  descriptionEn        String?   @map("description_en")
+  isEnabled            Boolean   @default(false) @map("is_enabled")
+  activityStartAt      DateTime  @map("activity_start_at")
+  activityEndAt        DateTime  @map("activity_end_at")
+  showCountdown        Boolean   @default(true) @map("show_countdown")
+  preorderDeliveryDate DateTime  @map("preorder_delivery_date") @db.Date
+  deliveryFee          Decimal   @default(0) @map("delivery_fee") @db.Decimal(10, 2)
+  createdBy            String    @map("created_by")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  creator              User          @relation("DealDayCreatedBy", fields: [createdBy], references: [id])
+  items                DealDayItem[]
+  orders               Order[]
+
+  @@map("deal_days")
+}
+
+model DealDayItem {
+  id                String            @id @default(cuid())
+  dealDayId         String            @map("deal_day_id")
+  productId         String            @map("product_id")
+  variantId         String?           @map("variant_id")
+  dealPrice         Decimal           @map("deal_price") @db.Decimal(10, 2)
+  totalQuantity     Int               @map("total_quantity")
+  soldQuantity      Int               @default(0) @map("sold_quantity")
+  remainingQuantity Int               @map("remaining_quantity")
+  perOrderLimit     Int?              @map("per_order_limit")
+  perUserLimit      Int?              @map("per_user_limit")
+  status            DealDayItemStatus @default(active)
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+
+  dealDay           DealDay        @relation(fields: [dealDayId], references: [id], onDelete: Cascade)
+  product           Product        @relation(fields: [productId], references: [id])
+  variant           ProductVariant? @relation(fields: [variantId], references: [id])
+  orderItems        OrderItem[]
+
+  @@map("deal_day_items")
+}
+
+model Order {
+  id                   String            @id @default(cuid())
+  orderNumber          String            @unique @map("order_number")
+  userId               String            @map("user_id")
+  orderType            OrderType         @map("order_type")
+  status               OrderStatus       @default(pending)
+  fulfillmentMethod    FulfillmentMethod @map("fulfillment_method")
+  subtotal             Decimal           @db.Decimal(10, 2)
+  deliveryFee          Decimal           @default(0) @map("delivery_fee") @db.Decimal(10, 2)
+  totalAmount          Decimal           @map("total_amount") @db.Decimal(10, 2)
+  paymentMethod        PaymentMethod?    @map("payment_method")
+  paymentStatus        PaymentStatus     @default(unpaid) @map("payment_status")
+  paymentReference     String?           @map("payment_reference")
+  pickupStore          String?           @map("pickup_store")
+  pickupTime           DateTime?         @map("pickup_time")
+  deliveryArea         String?           @map("delivery_area")
+  deliveryAddress      String?           @map("delivery_address")
+  preorderDeliveryDate DateTime?         @map("preorder_delivery_date") @db.Date
+  dealDayId            String?           @map("deal_day_id")
+  notes                String?
+  archivedAt           DateTime?         @map("archived_at")
+  createdAt            DateTime          @default(now()) @map("created_at")
+  updatedAt            DateTime          @updatedAt @map("updated_at")
+
+  user                 User        @relation(fields: [userId], references: [id])
+  dealDay              DealDay?    @relation(fields: [dealDayId], references: [id])
+  items                OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id                  String   @id @default(cuid())
+  orderId             String   @map("order_id")
+  productId           String   @map("product_id")
+  variantId           String?  @map("variant_id")
+  dealDayItemId       String?  @map("deal_day_item_id")
+  productNameSnapshot String   @map("product_name_snapshot")
+  variantSnapshot     Json?    @map("variant_snapshot")
+  quantity            Int
+  unitPrice           Decimal  @map("unit_price") @db.Decimal(10, 2)
+  lineTotal           Decimal  @map("line_total") @db.Decimal(10, 2)
+  isDealDayItem       Boolean  @default(false) @map("is_deal_day_item")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  order               Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product             Product        @relation(fields: [productId], references: [id])
+  variant             ProductVariant? @relation(fields: [variantId], references: [id])
+  dealDayItem         DealDayItem?   @relation(fields: [dealDayItemId], references: [id])
+
+  @@map("order_items")
+}
+
+model DeliveryRule {
+  id              String   @id @default(cuid())
+  areaName        String   @unique @map("area_name")
+  minOrderAmount  Decimal  @map("min_order_amount") @db.Decimal(10, 2)
+  deliveryFee     Decimal  @default(0) @map("delivery_fee") @db.Decimal(10, 2)
+  description     String?
+  isEnabled       Boolean  @default(true) @map("is_enabled")
+  sortOrder       Int      @default(0) @map("sort_order")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("delivery_rules")
+}
