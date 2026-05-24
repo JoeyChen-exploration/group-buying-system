@@ -59,7 +59,7 @@ npm run db:seed
 ```
 
 默认管理员账户：
-- 邮箱：`admin@yuwei.com`
+- 邮箱：`admin@yuewei.com`
 - 密码：`Admin@123456`（首次登录后请修改）
 
 ### 4. 启动开发服务器
