@@ -9,9 +9,7 @@ function LoginForm() {
   const params = useSearchParams();
 
   const emailParam = params.get("email") ?? "";
-  const registered = params.get("registered") === "true";
   const verified = params.get("verified") === "true";
-  const errorParam = params.get("error");
 
   const [form, setForm] = useState({ email: emailParam, password: "" });
   const [error, setError] = useState("");
@@ -53,22 +51,10 @@ function LoginForm() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-sm">
-        {/* Status banners */}
-        {registered && !verified && (
-          <div className="mb-4 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
-            <p className="font-medium">注册成功！请验证邮箱</p>
-            <p className="mt-0.5 text-amber-700">验证邮件已发送至 <strong>{emailParam}</strong>，验证后即可登录。</p>
-          </div>
-        )}
         {verified && (
           <div className="mb-4 rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800">
             <p className="font-medium">邮箱验证成功！</p>
             <p className="mt-0.5 text-green-700">请输入密码完成登录。</p>
-          </div>
-        )}
-        {errorParam === "invalid-token" && (
-          <div className="mb-4 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">
-            验证链接已失效或无效，请重新注册或联系客服。
           </div>
         )}
 

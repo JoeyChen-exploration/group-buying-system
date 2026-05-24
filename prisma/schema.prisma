@@ -65,8 +65,10 @@ model User {
   id                  String    @id @default(cuid())
   name                String
   email               String    @unique
-  emailVerifiedAt     DateTime? @map("email_verified_at")
-  phone               String?   @map("phone")
+  emailVerifiedAt          DateTime? @map("email_verified_at")
+  emailVerificationCode    String?   @map("email_verification_code")
+  emailVerificationExpires DateTime? @map("email_verification_expires")
+  phone                    String?   @map("phone")
   passwordHash        String    @map("password_hash")
   role                UserRole  @default(customer)
   deliveryArea        String?   @map("delivery_area")

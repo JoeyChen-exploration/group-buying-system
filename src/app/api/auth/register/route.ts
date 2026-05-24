@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { signVerifyToken, sendVerificationEmail } from "@/lib/email";
+import { generateOtp, otpExpiresAt, sendVerificationCode } from "@/lib/email";
 import { ok, fail, serverError } from "@/lib/response";
 
 const schema = z.object({
@@ -18,9 +18,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const parsed = schema.safeParse(body);
-    if (!parsed.success) {
-      return fail(parsed.error.errors[0].message);
-    }
+    if (!parsed.success) return fail(parsed.error.errors[0].message);
 
     const { name, email, phone, password, deliveryArea, addressDetail } = parsed.data;
 
@@ -28,6 +26,9 @@ export async function POST(req: NextRequest) {
     if (existing) return fail("该邮箱已注册");
 
     const passwordHash = await bcrypt.hash(password, 12);
+    const code = generateOtp();
+    const expires = otpExpiresAt();
+
     const user = await prisma.user.create({
       data: {
         name,
@@ -37,15 +38,15 @@ export async function POST(req: NextRequest) {
         role: "customer",
         deliveryArea: deliveryArea || null,
         addressDetail: addressDetail || null,
+        emailVerificationCode: code,
+        emailVerificationExpires: expires,
       },
     });
 
-    // Send verification email (non-blocking — don't fail registration if SMTP errors)
     try {
-      const token = await signVerifyToken(user.id, user.email);
-      await sendVerificationEmail(user.email, user.name, token);
+      await sendVerificationCode(user.email, user.name, code);
     } catch (emailErr) {
-      console.error("Failed to send verification email:", emailErr);
+      console.error("Failed to send verification code:", emailErr);
     }
 
     return ok({ email: user.email }, 201);
