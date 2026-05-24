@@ -45,8 +45,7 @@ export default function RegisterPage() {
         setError(data.message);
         return;
       }
-      router.push("/");
-      router.refresh();
+      router.push(`/login?email=${encodeURIComponent(form.email)}&registered=true`);
     } catch {
       setError("网络错误，请重试");
     } finally {

@@ -27,6 +27,10 @@ export async function POST(req: NextRequest) {
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) return fail("邮箱或密码错误", 401);
 
+    if (!user.emailVerifiedAt) {
+      return fail("请先验证邮箱，验证邮件已发送至你的邮箱", 403);
+    }
+
     const token = await signToken({ userId: user.id, role: user.role, name: user.name });
     const cookieStore = await cookies();
     cookieStore.set(createSessionCookie(token));

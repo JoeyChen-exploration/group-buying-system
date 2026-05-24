@@ -55,12 +55,13 @@ async function main() {
   const adminPassword = await bcrypt.hash("Admin@123456", 12);
   await prisma.user.upsert({
     where: { email: "admin@yuwei.com" },
-    update: {},
+    update: { emailVerifiedAt: new Date() },
     create: {
       name: "管理员",
       email: "admin@yuwei.com",
       passwordHash: adminPassword,
       role: "admin",
+      emailVerifiedAt: new Date(),
     },
   });
   console.log("✓ Admin account seeded (email: admin@yuwei.com, password: Admin@123456)");

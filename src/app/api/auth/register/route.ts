@@ -2,9 +2,8 @@ import { NextRequest } from "next/server";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { signToken, createSessionCookie } from "@/lib/auth";
+import { signVerifyToken, sendVerificationEmail } from "@/lib/email";
 import { ok, fail, serverError } from "@/lib/response";
-import { cookies } from "next/headers";
 
 const schema = z.object({
   name: z.string().min(1, "姓名不能为空").max(50),
@@ -41,11 +40,15 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    const token = await signToken({ userId: user.id, role: user.role, name: user.name });
-    const cookieStore = await cookies();
-    cookieStore.set(createSessionCookie(token));
+    // Send verification email (non-blocking — don't fail registration if SMTP errors)
+    try {
+      const token = await signVerifyToken(user.id, user.email);
+      await sendVerificationEmail(user.email, user.name, token);
+    } catch (emailErr) {
+      console.error("Failed to send verification email:", emailErr);
+    }
 
-    return ok({ id: user.id, name: user.name, role: user.role }, 201);
+    return ok({ email: user.email }, 201);
   } catch {
     return serverError();
   }
