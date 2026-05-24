@@ -7,7 +7,7 @@ import { ok, fail, serverError } from "@/lib/response";
 import { cookies } from "next/headers";
 
 const schema = z.object({
-  phone: z.string().min(1, "请输入手机号"),
+  email: z.string().email("请输入有效的邮箱"),
   password: z.string().min(1, "请输入密码"),
 });
 
@@ -19,13 +19,13 @@ export async function POST(req: NextRequest) {
       return fail(parsed.error.errors[0].message);
     }
 
-    const { phone, password } = parsed.data;
+    const { email, password } = parsed.data;
 
-    const user = await prisma.user.findUnique({ where: { phone } });
-    if (!user) return fail("手机号或密码错误", 401);
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) return fail("邮箱或密码错误", 401);
 
     const valid = await bcrypt.compare(password, user.passwordHash);
-    if (!valid) return fail("手机号或密码错误", 401);
+    if (!valid) return fail("邮箱或密码错误", 401);
 
     const token = await signToken({ userId: user.id, role: user.role, name: user.name });
     const cookieStore = await cookies();

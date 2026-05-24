@@ -33,7 +33,7 @@ export async function GET() {
 
 const updateSchema = z.object({
   name: z.string().min(1).max(50).optional(),
-  email: z.string().email("邮箱格式不正确").optional().or(z.literal("")),
+  phone: z.string().max(20).optional(),
   deliveryArea: z.string().optional(),
   addressDetail: z.string().optional(),
   languagePreference: z.enum(["zh", "en"]).optional(),
@@ -50,10 +50,9 @@ export async function PATCH(req: NextRequest) {
       return ok({ message: parsed.error.errors[0].message }, 400);
     }
 
-    const { email, ...rest } = parsed.data;
     const user = await prisma.user.update({
       where: { id: session.userId },
-      data: { ...rest, email: email || null },
+      data: parsed.data,
       select: {
         id: true,
         name: true,

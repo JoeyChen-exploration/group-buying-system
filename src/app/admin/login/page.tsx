@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const [form, setForm] = useState({ phone: "", password: "" });
+  const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -26,7 +26,6 @@ export default function AdminLoginPage() {
       }
       if (data.data.role === "customer") {
         setError("该账号没有后台权限");
-        // Clear the session we just created
         await fetch("/api/auth/logout", { method: "POST" });
         return;
       }
@@ -49,15 +48,15 @@ export default function AdminLoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">账号</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">邮箱</label>
             <input
-              type="text"
+              type="email"
               required
-              autoComplete="username"
+              autoComplete="email"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
-              value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              placeholder="手机号 / 账号"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              placeholder="your@email.com"
             />
           </div>
           <div>

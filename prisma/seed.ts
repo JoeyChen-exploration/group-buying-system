@@ -54,17 +54,16 @@ async function main() {
   // Default admin account — change password after first login
   const adminPassword = await bcrypt.hash("Admin@123456", 12);
   await prisma.user.upsert({
-    where: { phone: "admin" },
+    where: { email: "admin@yuwei.com" },
     update: {},
     create: {
       name: "管理员",
-      phone: "admin",
       email: "admin@yuwei.com",
       passwordHash: adminPassword,
       role: "admin",
     },
   });
-  console.log("✓ Admin account seeded (phone: admin, password: Admin@123456)");
+  console.log("✓ Admin account seeded (email: admin@yuwei.com, password: Admin@123456)");
 }
 
 main()

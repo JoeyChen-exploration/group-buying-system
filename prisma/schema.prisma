@@ -64,8 +64,8 @@ enum DealDayItemStatus {
 model User {
   id                  String    @id @default(cuid())
   name                String
-  phone               String    @unique
-  email               String?   @unique
+  email               String    @unique
+  phone               String?   @map("phone")
   passwordHash        String    @map("password_hash")
   role                UserRole  @default(customer)
   deliveryArea        String?   @map("delivery_area")

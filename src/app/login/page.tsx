@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [form, setForm] = useState({ phone: "", password: "" });
+  const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -42,14 +42,15 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">手机号</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">邮箱</label>
             <input
-              type="text"
+              type="email"
               required
+              autoComplete="email"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-              value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              placeholder="请输入手机号"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              placeholder="your@email.com"
             />
           </div>
           <div>
@@ -57,6 +58,7 @@ export default function LoginPage() {
             <input
               type="password"
               required
+              autoComplete="current-password"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}

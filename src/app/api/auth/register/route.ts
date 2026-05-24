@@ -8,8 +8,8 @@ import { cookies } from "next/headers";
 
 const schema = z.object({
   name: z.string().min(1, "姓名不能为空").max(50),
-  phone: z.string().min(8, "手机号格式不正确").max(20),
-  email: z.string().email("邮箱格式不正确").optional().or(z.literal("")),
+  email: z.string().email("邮箱格式不正确"),
+  phone: z.string().max(20).optional().or(z.literal("")),
   password: z.string().min(8, "密码至少 8 位"),
   deliveryArea: z.string().optional(),
   addressDetail: z.string().optional(),
@@ -23,21 +23,17 @@ export async function POST(req: NextRequest) {
       return fail(parsed.error.errors[0].message);
     }
 
-    const { name, phone, email, password, deliveryArea, addressDetail } = parsed.data;
+    const { name, email, phone, password, deliveryArea, addressDetail } = parsed.data;
 
-    const existing = await prisma.user.findFirst({
-      where: { OR: [{ phone }, ...(email ? [{ email }] : [])] },
-    });
-    if (existing) {
-      return fail(existing.phone === phone ? "该手机号已注册" : "该邮箱已注册");
-    }
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) return fail("该邮箱已注册");
 
     const passwordHash = await bcrypt.hash(password, 12);
     const user = await prisma.user.create({
       data: {
         name,
-        phone,
-        email: email || null,
+        email,
+        phone: phone || null,
         passwordHash,
         role: "customer",
         deliveryArea: deliveryArea || null,

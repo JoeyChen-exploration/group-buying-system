@@ -8,8 +8,8 @@ export default function RegisterPage() {
   const router = useRouter();
   const [form, setForm] = useState({
     name: "",
-    phone: "",
     email: "",
+    phone: "",
     password: "",
     confirmPassword: "",
   });
@@ -35,8 +35,8 @@ export default function RegisterPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: form.name,
-          phone: form.phone,
           email: form.email,
+          phone: form.phone,
           password: form.password,
         }),
       });
@@ -73,22 +73,11 @@ export default function RegisterPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">手机号</label>
-            <input
-              type="text"
-              required
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-              value={form.phone}
-              onChange={set("phone")}
-              placeholder="请输入手机号"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              邮箱 <span className="text-gray-400 font-normal">（选填）</span>
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">邮箱</label>
             <input
               type="email"
+              required
+              autoComplete="email"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
               value={form.email}
               onChange={set("email")}
@@ -96,10 +85,23 @@ export default function RegisterPage() {
             />
           </div>
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              手机号 <span className="text-gray-400 font-normal">（选填）</span>
+            </label>
+            <input
+              type="tel"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+              value={form.phone}
+              onChange={set("phone")}
+              placeholder="方便联系配送"
+            />
+          </div>
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">密码</label>
             <input
               type="password"
               required
+              autoComplete="new-password"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
               value={form.password}
               onChange={set("password")}
@@ -111,6 +113,7 @@ export default function RegisterPage() {
             <input
               type="password"
               required
+              autoComplete="new-password"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
               value={form.confirmPassword}
               onChange={set("confirmPassword")}
