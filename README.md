@@ -26,12 +26,27 @@ npm install
 cp .env.example .env.local
 ```
 
-编辑 `.env.local`，填入你的数据库连接串和 JWT 密钥：
+编辑 `.env.local`，填入以下配置：
 
 ```env
+# 数据库
 DATABASE_URL="postgresql://user:password@localhost:5432/yuwei"
+
+# JWT
 JWT_SECRET="your-random-secret"
+
+# 应用地址
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+
+# SMTP（邮箱验证）— 推荐 Gmail App Password
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT="587"
+SMTP_SECURE="false"
+SMTP_USER="your@gmail.com"
+SMTP_PASS="your-16-digit-app-password"
 ```
+
+> **Gmail App Password 获取方式：** Google 账号 → 安全 → 开启两步验证 → 搜索「App passwords」→ 创建 → 复制 16 位密码填入 `SMTP_PASS`
 
 ### 3. 初始化数据库
 
@@ -44,7 +59,7 @@ npm run db:seed
 ```
 
 默认管理员账户：
-- 手机号：`admin`
+- 邮箱：`admin@yuwei.com`
 - 密码：`Admin@123456`（首次登录后请修改）
 
 ### 4. 启动开发服务器
@@ -58,12 +73,13 @@ npm run dev
 ## 常用命令
 
 ```bash
-npm run dev          # 开发服务器
-npm run build        # 生产构建
-npm run db:migrate   # 执行数据库迁移
-npm run db:seed      # 写入种子数据
-npm run db:studio    # 打开 Prisma Studio（数据库 GUI）
-npm run lint         # ESLint 检查
+npm run dev                   # 开发服务器
+npm run build                 # 生产构建
+npm run db:migrate            # 执行数据库迁移
+npm run db:seed               # 写入种子数据（配送规则 + admin 账号）
+npm run db:studio             # 打开 Prisma Studio（数据库 GUI）
+npm run db:clear-test-users   # 删除所有 customer 测试账号（admin 不受影响）
+npm run lint                  # ESLint 检查
 ```
 
 ## 项目结构
