@@ -9,24 +9,25 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
   return (
     <CartProvider>
       <div className="min-h-screen bg-gray-50">
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
+        <header className="bg-white border-b border-gray-100 sticky top-0 z-40">
           <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-            <Link href="/" className="text-base font-bold text-gray-900 tracking-tight">
-              悦味烘焙工坊
+            <Link href="/" className="flex flex-col leading-tight">
+              <span className="text-sm font-bold text-gray-900 tracking-tight">悦味烘焙工坊</span>
+              <span className="text-[10px] text-gray-400 tracking-widest uppercase">Yuwei Baking Studio</span>
             </Link>
             <div className="flex items-center gap-4">
               <CartIcon />
               {session ? (
-                <span className="text-sm text-gray-600">{session.name}</span>
+                <span className="text-sm text-gray-500">{session.name}</span>
               ) : (
-                <Link href="/login" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+                <Link href="/login" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">
                   登录
                 </Link>
               )}
             </div>
           </div>
         </header>
-        <main className="max-w-5xl mx-auto px-4 py-6">{children}</main>
+        <main className="max-w-5xl mx-auto px-4 py-8">{children}</main>
       </div>
     </CartProvider>
   );
