@@ -47,13 +47,13 @@ export async function GET(req: NextRequest) {
       ...(search ? { nameZh: { contains: search } } : {}),
     };
 
-    const orderBy = (() => {
-      if (sortField === "nameZh") return { nameZh: sortDir };
-      if (sortField === "basePrice") return { basePrice: sortDir };
-      if (sortField === "status") return { status: sortDir };
-      if (sortField === "category") return { category: { nameZh: sortDir } };
-      return { createdAt: sortDir };
-    })();
+    const dir = sortDir as "asc" | "desc";
+    const orderBy =
+      sortField === "nameZh" ? { nameZh: dir }
+      : sortField === "basePrice" ? { basePrice: dir }
+      : sortField === "status" ? { status: dir }
+      : sortField === "category" ? { category: { nameZh: dir } }
+      : { createdAt: dir };
 
     const [total, products] = await prisma.$transaction([
       prisma.product.count({ where }),
