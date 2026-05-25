@@ -7,7 +7,6 @@ import { ok, fail, serverError } from "@/lib/response";
 const schema = z.object({
   nameZh: z.string().min(1, "分类名称不能为空").max(50),
   nameEn: z.string().max(50).optional().or(z.literal("")),
-  sortOrder: z.number().int().default(0),
   isVisible: z.boolean().default(true),
 });
 
@@ -35,9 +34,14 @@ export async function POST(req: NextRequest) {
     const parsed = schema.safeParse(body);
     if (!parsed.success) return fail(parsed.error.errors[0].message);
 
-    const { nameZh, nameEn, sortOrder, isVisible } = parsed.data;
+    const { nameZh, nameEn, isVisible } = parsed.data;
+    const duplicate = await prisma.category.findFirst({
+      where: { nameZh: { equals: nameZh, mode: "insensitive" } },
+    });
+    if (duplicate) return fail("已有相同分类名，请更换");
+
     const category = await prisma.category.create({
-      data: { nameZh, nameEn: nameEn || null, sortOrder, isVisible },
+      data: { nameZh, nameEn: nameEn || null, isVisible },
     });
     return ok(category, 201);
   } catch {

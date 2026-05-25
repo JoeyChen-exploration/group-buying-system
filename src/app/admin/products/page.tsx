@@ -23,6 +23,24 @@ const STATUS_COLOR: Record<string, string> = {
   archived: "bg-gray-100 text-gray-500",
 };
 
+type SortField = "nameZh" | "category" | "basePrice" | "status";
+type SortDir = "asc" | "desc";
+
+function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
+  const asc = active && dir === "asc";
+  const desc = active && dir === "desc";
+  return (
+    <span className="ml-1.5 inline-flex flex-col gap-px">
+      <svg width="8" height="5" viewBox="0 0 8 5" fill="none">
+        <path d="M4 0L8 5H0L4 0Z" fill={asc ? "#374151" : "#D1D5DB"} />
+      </svg>
+      <svg width="8" height="5" viewBox="0 0 8 5" fill="none">
+        <path d="M4 5L0 0H8L4 5Z" fill={desc ? "#374151" : "#D1D5DB"} />
+      </svg>
+    </span>
+  );
+}
+
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [meta, setMeta] = useState<Meta>({ total: 0, page: 1, totalPages: 1 });
@@ -30,10 +48,12 @@ export default function ProductsPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
+  const [sortField, setSortField] = useState<SortField>("nameZh");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
 
   const load = useCallback(async () => {
     setLoading(true);
-    const params = new URLSearchParams({ page: String(page) });
+    const params = new URLSearchParams({ page: String(page), sortField, sortDir });
     if (search) params.set("search", search);
     if (statusFilter) params.set("status", statusFilter);
     const res = await fetch(`/api/admin/products?${params}`);
@@ -43,9 +63,19 @@ export default function ProductsPage() {
       setMeta({ total: data.data.total, page: data.data.page, totalPages: data.data.totalPages });
     }
     setLoading(false);
-  }, [page, search, statusFilter]);
+  }, [page, search, statusFilter, sortField, sortDir]);
 
   useEffect(() => { load(); }, [load]);
+
+  function toggleSort(field: SortField) {
+    if (sortField === field) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDir("asc");
+    }
+    setPage(1);
+  }
 
   async function handleDelete(product: Product) {
     if (!confirm(`确认删除商品「${product.nameZh}」？`)) return;
@@ -53,6 +83,20 @@ export default function ProductsPage() {
     const data = await res.json();
     alert(data.data?.message ?? data.message);
     load();
+  }
+
+  function ColHeader({ field, label, className }: { field: SortField; label: string; className?: string }) {
+    return (
+      <th className={`px-4 py-3 font-medium text-gray-600 ${className ?? ""}`}>
+        <button
+          onClick={() => toggleSort(field)}
+          className="inline-flex items-center hover:text-gray-900"
+        >
+          {label}
+          <SortIcon active={sortField === field} dir={sortDir} />
+        </button>
+      </th>
+    );
   }
 
   return (
@@ -64,7 +108,6 @@ export default function ProductsPage() {
         </Link>
       </div>
 
-      {/* Filters */}
       <div className="flex gap-3 mb-4">
         <input
           className="input max-w-xs"
@@ -92,11 +135,11 @@ export default function ProductsPage() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">商品名称</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">分类</th>
-                  <th className="text-right px-4 py-3 font-medium text-gray-600">基础价格</th>
+                  <ColHeader field="nameZh" label="商品名称" className="text-left" />
+                  <ColHeader field="category" label="分类" className="text-left" />
+                  <ColHeader field="basePrice" label="基础价格" className="text-right" />
                   <th className="text-center px-4 py-3 font-medium text-gray-600">规格数</th>
-                  <th className="text-center px-4 py-3 font-medium text-gray-600">状态</th>
+                  <ColHeader field="status" label="状态" className="text-center" />
                   <th className="text-center px-4 py-3 font-medium text-gray-600">隐藏款</th>
                   <th className="px-4 py-3" />
                 </tr>
@@ -129,7 +172,6 @@ export default function ProductsPage() {
             </table>
           </div>
 
-          {/* Pagination */}
           {meta.totalPages > 1 && (
             <div className="flex items-center justify-between mt-4 text-sm text-gray-500">
               <span>共 {meta.total} 个商品</span>

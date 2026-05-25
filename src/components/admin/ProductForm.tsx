@@ -110,8 +110,8 @@ export default function ProductForm({ productId }: Props) {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
-      <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => router.back()} className="text-gray-400 hover:text-gray-700 text-sm">← 返回</button>
+      <div className="mb-6">
+        <button onClick={() => router.back()} className="text-gray-400 hover:text-gray-700 text-sm mb-2 block">← 返回</button>
         <h1 className="text-xl font-bold text-gray-900">{isEdit ? "编辑商品" : "新建商品"}</h1>
       </div>
 

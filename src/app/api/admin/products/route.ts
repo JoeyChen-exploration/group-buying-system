@@ -37,6 +37,8 @@ export async function GET(req: NextRequest) {
     const status = searchParams.get("status");
     const search = searchParams.get("search");
     const page = Math.max(1, Number(searchParams.get("page") ?? 1));
+    const sortField = searchParams.get("sortField") ?? "createdAt";
+    const sortDir = searchParams.get("sortDir") === "asc" ? "asc" : "desc";
     const pageSize = 20;
 
     const where = {
@@ -44,6 +46,14 @@ export async function GET(req: NextRequest) {
       ...(status ? { status: status as "active" | "inactive" | "archived" } : {}),
       ...(search ? { nameZh: { contains: search } } : {}),
     };
+
+    const orderBy = (() => {
+      if (sortField === "nameZh") return { nameZh: sortDir };
+      if (sortField === "basePrice") return { basePrice: sortDir };
+      if (sortField === "status") return { status: sortDir };
+      if (sortField === "category") return { category: { nameZh: sortDir } };
+      return { createdAt: sortDir };
+    })();
 
     const [total, products] = await prisma.$transaction([
       prisma.product.count({ where }),
@@ -54,7 +64,7 @@ export async function GET(req: NextRequest) {
           variants: { where: { status: "active" }, orderBy: { priceDelta: "asc" } },
           _count: { select: { orderItems: true } },
         },
-        orderBy: { createdAt: "desc" },
+        orderBy,
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),

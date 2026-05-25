@@ -7,7 +7,6 @@ import { ok, fail, notFound, serverError } from "@/lib/response";
 const schema = z.object({
   nameZh: z.string().min(1).max(50).optional(),
   nameEn: z.string().max(50).optional().or(z.literal("")),
-  sortOrder: z.number().int().optional(),
   isVisible: z.boolean().optional(),
 });
 
@@ -26,10 +25,17 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     const existing = await prisma.category.findUnique({ where: { id } });
     if (!existing) return notFound("分类不存在");
 
-    const { nameEn, ...rest } = parsed.data;
+    const { nameZh, nameEn, ...rest } = parsed.data;
+    if (nameZh) {
+      const duplicate = await prisma.category.findFirst({
+        where: { nameZh: { equals: nameZh, mode: "insensitive" }, NOT: { id } },
+      });
+      if (duplicate) return fail("已有相同分类名，请更换");
+    }
+
     const category = await prisma.category.update({
       where: { id },
-      data: { ...rest, nameEn: nameEn === "" ? null : nameEn },
+      data: { ...rest, ...(nameZh ? { nameZh } : {}), nameEn: nameEn === "" ? null : nameEn },
     });
     return ok(category);
   } catch {

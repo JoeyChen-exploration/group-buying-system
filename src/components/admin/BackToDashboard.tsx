@@ -5,7 +5,11 @@ import { usePathname } from "next/navigation";
 
 export default function BackToDashboard() {
   const pathname = usePathname();
-  if (pathname === "/admin/dashboard") return null;
+  if (
+    pathname === "/admin/dashboard" ||
+    pathname === "/admin/products/new" ||
+    pathname.endsWith("/edit")
+  ) return null;
 
   return (
     <Link
