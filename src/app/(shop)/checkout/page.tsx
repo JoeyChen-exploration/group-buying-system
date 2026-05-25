@@ -18,6 +18,13 @@ interface UserProfile {
   addressDetail: string | null;
 }
 
+interface ActiveDealDay {
+  id: string;
+  titleZh: string;
+  preorderDeliveryDate: string;
+  activityEndAt: string;
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, subtotal, clearCart } = useCart();
@@ -25,6 +32,7 @@ export default function CheckoutPage() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [rules, setRules] = useState<DeliveryRule[]>([]);
+  const [activeDealDay, setActiveDealDay] = useState<ActiveDealDay | null | undefined>(undefined);
 
   const [fulfillmentMethod, setFulfillmentMethod] = useState<"pickup" | "delivery">("pickup");
   const [deliveryArea, setDeliveryArea] = useState("");
@@ -45,6 +53,9 @@ export default function CheckoutPage() {
     });
     fetch("/api/delivery-rules").then((r) => r.json()).then((d) => {
       if (d.success) setRules(d.data);
+    });
+    fetch("/api/deal-days/active").then((r) => r.json()).then((d) => {
+      setActiveDealDay(d.success ? d.data : null);
     });
   }, []);
 
@@ -122,19 +133,36 @@ export default function CheckoutPage() {
         <section className="bg-white rounded-xl border border-gray-100 p-4 space-y-3">
           <h2 className="text-sm font-semibold text-gray-800">取货方式</h2>
           <div className="flex gap-3">
-            {(["pickup", "delivery"] as const).map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => setFulfillmentMethod(m)}
-                className={`flex-1 py-2 rounded-lg border text-sm font-medium transition-colors ${
-                  fulfillmentMethod === m ? "border-gray-900 bg-gray-900 text-white" : "border-gray-200 text-gray-600 hover:border-gray-400"
-                }`}
-              >
-                {m === "pickup" ? "到店自取" : "送货上门"}
-              </button>
-            ))}
+            <button
+              type="button"
+              onClick={() => setFulfillmentMethod("pickup")}
+              className={`flex-1 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                fulfillmentMethod === "pickup" ? "border-gray-900 bg-gray-900 text-white" : "border-gray-200 text-gray-600 hover:border-gray-400"
+              }`}
+            >
+              到店自取
+            </button>
+            <button
+              type="button"
+              disabled={!activeDealDay}
+              onClick={() => activeDealDay && setFulfillmentMethod("delivery")}
+              className={`flex-1 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                !activeDealDay
+                  ? "border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed"
+                  : fulfillmentMethod === "delivery"
+                  ? "border-gray-900 bg-gray-900 text-white"
+                  : "border-gray-200 text-gray-600 hover:border-gray-400"
+              }`}
+            >
+              送货上门
+              {!activeDealDay && <span className="block text-[10px] font-normal mt-0.5">仅优惠日可选</span>}
+            </button>
           </div>
+          {activeDealDay && (
+            <p className="text-xs text-green-600">
+              优惠日活动进行中：{activeDealDay.titleZh} · 预计配送日期 {new Date(activeDealDay.preorderDeliveryDate).toLocaleDateString("zh-CN")}
+            </p>
+          )}
 
           {fulfillmentMethod === "delivery" && (
             <div className="space-y-3 pt-1">

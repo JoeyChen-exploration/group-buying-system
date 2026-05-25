@@ -39,6 +39,13 @@ export async function POST(req: NextRequest) {
     if (fulfillmentMethod === "delivery") {
       if (!deliveryArea) return fail("请选择配送区域");
       if (!deliveryAddress?.trim()) return fail("请填写详细地址");
+
+      // Delivery is only allowed during an active deal day
+      const now = new Date();
+      const activeDealDay = await prisma.dealDay.findFirst({
+        where: { isEnabled: true, activityStartAt: { lte: now }, activityEndAt: { gte: now } },
+      });
+      if (!activeDealDay) return fail("目前不在优惠日配送时段内，只支持到店自取");
     }
 
     // Batch-fetch and validate products + variants from DB
