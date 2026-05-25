@@ -109,7 +109,7 @@ export default function CheckoutPage() {
     return (
       <div className="py-24 text-center">
         <p className="text-gray-400 mb-4">购物车是空的</p>
-        <a href="/" className="text-sm text-gray-900 underline">去选购</a>
+        <a href="/menu" className="text-sm text-gray-900 underline">去选购</a>
       </div>
     );
   }

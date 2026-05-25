@@ -129,7 +129,7 @@ export default function OrderConfirmPage({ params }: { params: Promise<{ id: str
       </div>
 
       <Link
-        href="/"
+        href="/menu"
         className="block w-full mt-6 border border-gray-200 text-gray-700 text-sm font-medium py-3 rounded-xl text-center hover:bg-gray-50 transition-colors"
       >
         继续选购

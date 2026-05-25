@@ -11,9 +11,9 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
       <div className="min-h-screen bg-gray-50">
         <header className="bg-white border-b border-gray-100 sticky top-0 z-40">
           <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-            <Link href="/" className="flex flex-col leading-tight">
+            <Link href="/menu" className="flex flex-col leading-tight">
               <span className="text-sm font-bold text-gray-900 tracking-tight">悦味烘焙工坊</span>
-              <span className="text-[10px] text-gray-400 tracking-widest uppercase">Yuwei Baking Studio</span>
+              <span className="text-[10px] text-gray-400 tracking-widest uppercase">Joy Taste Bakery</span>
             </Link>
             <div className="flex items-center gap-4">
               <CartIcon />
