@@ -5,6 +5,36 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/middleware/require-auth";
 import { ok, fail, serverError } from "@/lib/response";
 
+export async function GET() {
+  try {
+    const { session, error } = await requireAuth();
+    if (error) return error;
+
+    const orders = await prisma.order.findMany({
+      where: { userId: session!.userId },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      select: {
+        id: true,
+        orderNumber: true,
+        status: true,
+        fulfillmentMethod: true,
+        totalAmount: true,
+        paymentMethod: true,
+        createdAt: true,
+        items: {
+          select: { productNameSnapshot: true, quantity: true },
+          take: 2,
+        },
+      },
+    });
+
+    return ok(orders);
+  } catch {
+    return serverError();
+  }
+}
+
 const schema = z.object({
   items: z.array(z.object({
     productId: z.string(),

@@ -16,6 +16,7 @@ interface CartContextValue {
   items: CartItem[];
   totalItems: number;
   subtotal: number;
+  isAuthenticated: boolean | null;
   addItem: (item: Omit<CartItem, "quantity"> & { quantity?: number }) => void;
   updateQuantity: (productId: string, variantId: string | undefined, delta: number) => void;
   setQuantity: (productId: string, variantId: string | undefined, qty: number) => void;
@@ -33,6 +34,7 @@ function itemKey(productId: string, variantId?: string) {
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
   useEffect(() => {
     try {
@@ -40,6 +42,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       if (raw) setItems(JSON.parse(raw));
     } catch {}
     setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/me").then((r) => r.json()).then((d) => {
+      setIsAuthenticated(d.success === true);
+    }).catch(() => setIsAuthenticated(false));
   }, []);
 
   useEffect(() => {
@@ -88,7 +96,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const subtotal = items.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
 
   return (
-    <CartContext.Provider value={{ items, totalItems, subtotal, addItem, updateQuantity, setQuantity, removeItem, clearCart }}>
+    <CartContext.Provider value={{ items, totalItems, subtotal, isAuthenticated, addItem, updateQuantity, setQuantity, removeItem, clearCart }}>
       {children}
     </CartContext.Provider>
   );

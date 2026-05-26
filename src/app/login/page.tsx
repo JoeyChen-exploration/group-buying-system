@@ -10,6 +10,7 @@ function LoginForm() {
 
   const emailParam = params.get("email") ?? "";
   const verified = params.get("verified") === "true";
+  const redirectTo = params.get("redirect") ?? "/menu";
 
   const [form, setForm] = useState({ email: emailParam, password: "" });
   const [error, setError] = useState("");
@@ -36,7 +37,7 @@ function LoginForm() {
         return;
       }
       if (data.data.role === "customer") {
-        router.push("/");
+        router.push(redirectTo);
       } else {
         router.push("/admin/dashboard");
       }

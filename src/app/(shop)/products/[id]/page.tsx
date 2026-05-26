@@ -5,6 +5,7 @@ import { use } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
+import LoginPromptToast from "@/components/shop/LoginPromptToast";
 
 interface Variant {
   id: string;
@@ -29,7 +30,7 @@ interface Product {
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
-  const { addItem } = useCart();
+  const { addItem, isAuthenticated } = useCart();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -38,6 +39,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
   useEffect(() => {
     fetch(`/api/products/${id}`)
@@ -62,6 +64,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const displayPrice = basePrice + (selectedVariant ? Number(selectedVariant.priceDelta) : 0);
 
   function handleAddToCart() {
+    if (isAuthenticated === false) {
+      setShowLoginPrompt(true);
+      return;
+    }
     addItem({
       productId: product!.id,
       variantId: selectedVariant?.id,
@@ -175,6 +181,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           {added ? "✓ 已加入购物车" : "加入购物车"}
         </button>
       </div>
+
+      <LoginPromptToast
+        show={showLoginPrompt}
+        redirectTo={`/products/${id}`}
+        onClose={() => setShowLoginPrompt(false)}
+      />
     </div>
   );
 }

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
+import LoginPromptToast from "@/components/shop/LoginPromptToast";
 
 interface Category { id: string; nameZh: string; }
 interface Variant { id: string; priceDelta: string; }
@@ -21,6 +22,8 @@ export default function ShopPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [activeCategory, setActiveCategory] = useState("");
   const [loading, setLoading] = useState(true);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const onNeedLogin = useCallback(() => setShowLoginPrompt(true), []);
 
   useEffect(() => {
     Promise.all([
@@ -69,10 +72,16 @@ export default function ShopPage() {
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           {filtered.map((p) => (
-            <ProductCard key={p.id} product={p} />
+            <ProductCard key={p.id} product={p} onNeedLogin={onNeedLogin} />
           ))}
         </div>
       )}
+
+      <LoginPromptToast
+        show={showLoginPrompt}
+        redirectTo="/menu"
+        onClose={() => setShowLoginPrompt(false)}
+      />
     </div>
   );
 }
@@ -92,9 +101,9 @@ function CartPlusIcon() {
   );
 }
 
-function ProductCard({ product }: { product: Product }) {
+function ProductCard({ product, onNeedLogin }: { product: Product; onNeedLogin: () => void }) {
   const router = useRouter();
-  const { addItem, items, updateQuantity } = useCart();
+  const { addItem, items, updateQuantity, isAuthenticated } = useCart();
 
   const hasVariants = product.variants.length > 0;
   const cartItem = hasVariants
@@ -110,16 +119,19 @@ function ProductCard({ product }: { product: Product }) {
 
   function handleAdd(e: React.MouseEvent) {
     e.stopPropagation();
+    if (isAuthenticated === false) { onNeedLogin(); return; }
     addItem({ productId: product.id, productName: product.nameZh, image: product.images[0], unitPrice: basePrice });
   }
 
   function handleIncrement(e: React.MouseEvent) {
     e.stopPropagation();
+    if (isAuthenticated === false) { onNeedLogin(); return; }
     updateQuantity(product.id, undefined, 1);
   }
 
   function handleDecrement(e: React.MouseEvent) {
     e.stopPropagation();
+    if (isAuthenticated === false) { onNeedLogin(); return; }
     updateQuantity(product.id, undefined, -1);
   }
 
