@@ -34,19 +34,15 @@ export default async function HomePage() {
             <span className="text-[10px] text-gray-400 tracking-widest uppercase">Joy Taste Bakery</span>
           </div>
           <div className="flex items-center gap-4 text-sm">
+            <Link href="/menu" className="text-gray-500 hover:text-gray-900 transition-colors">点单</Link>
             {session ? (
               <>
                 <Link href="/orders" className="text-gray-400 hover:text-gray-900 transition-colors">我的订单</Link>
                 <Link href="/profile" className="text-gray-500 hover:text-gray-900 transition-colors">{session.name}</Link>
-                <form action="/api/auth/logout" method="POST">
-                  <button type="submit" className="text-gray-400 hover:text-gray-900 transition-colors">登出</button>
-                </form>
               </>
             ) : (
               <>
-                <Link href="/login" className="text-gray-500 hover:text-gray-900 transition-colors">
-                  登录
-                </Link>
+                <Link href="/login" className="text-gray-500 hover:text-gray-900 transition-colors">登录</Link>
                 <Link
                   href="/register"
                   className="bg-gray-900 text-white text-xs font-medium px-4 py-1.5 rounded-lg hover:bg-gray-700 transition-colors"
@@ -76,7 +72,7 @@ export default async function HomePage() {
               href="/menu"
               className="inline-block bg-gray-900 text-white text-sm font-medium px-8 py-3.5 rounded-xl hover:bg-gray-700 transition-colors"
             >
-              浏览菜单
+              浏览产品
             </Link>
           </div>
 

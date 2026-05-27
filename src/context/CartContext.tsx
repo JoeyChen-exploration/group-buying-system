@@ -10,6 +10,8 @@ export interface CartItem {
   image?: string;
   unitPrice: number;
   quantity: number;
+  dealDayItemId?: string;
+  dealDayId?: string;
 }
 
 interface CartContextValue {
@@ -18,17 +20,17 @@ interface CartContextValue {
   subtotal: number;
   isAuthenticated: boolean | null;
   addItem: (item: Omit<CartItem, "quantity"> & { quantity?: number }) => void;
-  updateQuantity: (productId: string, variantId: string | undefined, delta: number) => void;
-  setQuantity: (productId: string, variantId: string | undefined, qty: number) => void;
-  removeItem: (productId: string, variantId: string | undefined) => void;
+  updateQuantity: (productId: string, variantId: string | undefined, delta: number, dealDayItemId?: string) => void;
+  setQuantity: (productId: string, variantId: string | undefined, qty: number, dealDayItemId?: string) => void;
+  removeItem: (productId: string, variantId: string | undefined, dealDayItemId?: string) => void;
   clearCart: () => void;
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
 const STORAGE_KEY = "yuwei_cart";
 
-function itemKey(productId: string, variantId?: string) {
-  return `${productId}::${variantId ?? ""}`;
+function itemKey(productId: string, variantId?: string, dealDayItemId?: string) {
+  return dealDayItemId ? `deal::${dealDayItemId}` : `${productId}::${variantId ?? ""}`;
 }
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
@@ -56,8 +58,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const addItem = useCallback((newItem: Omit<CartItem, "quantity"> & { quantity?: number }) => {
     setItems((prev) => {
-      const k = itemKey(newItem.productId, newItem.variantId);
-      const idx = prev.findIndex((i) => itemKey(i.productId, i.variantId) === k);
+      const k = itemKey(newItem.productId, newItem.variantId, newItem.dealDayItemId);
+      const idx = prev.findIndex((i) => itemKey(i.productId, i.variantId, i.dealDayItemId) === k);
       if (idx >= 0) {
         return prev.map((i, j) => j === idx ? { ...i, quantity: i.quantity + (newItem.quantity ?? 1) } : i);
       }
@@ -65,29 +67,29 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const setQuantity = useCallback((productId: string, variantId: string | undefined, qty: number) => {
-    const k = itemKey(productId, variantId);
+  const setQuantity = useCallback((productId: string, variantId: string | undefined, qty: number, dealDayItemId?: string) => {
+    const k = itemKey(productId, variantId, dealDayItemId);
     setItems((prev) =>
       qty <= 0
-        ? prev.filter((i) => itemKey(i.productId, i.variantId) !== k)
-        : prev.map((i) => itemKey(i.productId, i.variantId) === k ? { ...i, quantity: qty } : i)
+        ? prev.filter((i) => itemKey(i.productId, i.variantId, i.dealDayItemId) !== k)
+        : prev.map((i) => itemKey(i.productId, i.variantId, i.dealDayItemId) === k ? { ...i, quantity: qty } : i)
     );
   }, []);
 
-  const updateQuantity = useCallback((productId: string, variantId: string | undefined, delta: number) => {
-    const k = itemKey(productId, variantId);
+  const updateQuantity = useCallback((productId: string, variantId: string | undefined, delta: number, dealDayItemId?: string) => {
+    const k = itemKey(productId, variantId, dealDayItemId);
     setItems((prev) => {
-      const item = prev.find((i) => itemKey(i.productId, i.variantId) === k);
+      const item = prev.find((i) => itemKey(i.productId, i.variantId, i.dealDayItemId) === k);
       if (!item) return prev;
       const next = item.quantity + delta;
-      if (next <= 0) return prev.filter((i) => itemKey(i.productId, i.variantId) !== k);
-      return prev.map((i) => itemKey(i.productId, i.variantId) === k ? { ...i, quantity: next } : i);
+      if (next <= 0) return prev.filter((i) => itemKey(i.productId, i.variantId, i.dealDayItemId) !== k);
+      return prev.map((i) => itemKey(i.productId, i.variantId, i.dealDayItemId) === k ? { ...i, quantity: next } : i);
     });
   }, []);
 
-  const removeItem = useCallback((productId: string, variantId: string | undefined) => {
-    const k = itemKey(productId, variantId);
-    setItems((prev) => prev.filter((i) => itemKey(i.productId, i.variantId) !== k));
+  const removeItem = useCallback((productId: string, variantId: string | undefined, dealDayItemId?: string) => {
+    const k = itemKey(productId, variantId, dealDayItemId);
+    setItems((prev) => prev.filter((i) => itemKey(i.productId, i.variantId, i.dealDayItemId) !== k));
   }, []);
 
   const clearCart = useCallback(() => setItems([]), []);

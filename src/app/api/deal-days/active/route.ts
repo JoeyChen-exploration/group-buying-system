@@ -4,21 +4,46 @@ import { ok, serverError } from "@/lib/response";
 export async function GET() {
   try {
     const now = new Date();
-    const dealDay = await prisma.dealDay.findFirst({
+
+    const active = await prisma.dealDay.findFirst({
       where: {
         isEnabled: true,
         activityStartAt: { lte: now },
         activityEndAt: { gte: now },
       },
-      select: {
-        id: true,
-        titleZh: true,
-        preorderDeliveryDate: true,
-        deliveryFee: true,
-        activityEndAt: true,
+      include: {
+        items: {
+          where: { status: { not: "disabled" } },
+          include: {
+            product: { select: { id: true, nameZh: true, nameEn: true, images: true } },
+            variant: { select: { id: true, nameZh: true } },
+          },
+          orderBy: { createdAt: "asc" },
+        },
       },
     });
-    return ok(dealDay); // null if none active
+
+    const upcoming = active
+      ? null
+      : await prisma.dealDay.findFirst({
+          where: {
+            isEnabled: true,
+            activityStartAt: { gt: now },
+          },
+          include: {
+            items: {
+              where: { status: { not: "disabled" } },
+              include: {
+                product: { select: { id: true, nameZh: true, nameEn: true, images: true } },
+                variant: { select: { id: true, nameZh: true } },
+              },
+              orderBy: { createdAt: "asc" },
+            },
+          },
+          orderBy: { activityStartAt: "asc" },
+        });
+
+    return ok({ active, upcoming });
   } catch {
     return serverError();
   }

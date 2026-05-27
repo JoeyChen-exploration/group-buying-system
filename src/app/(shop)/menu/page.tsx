@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import LoginPromptToast from "@/components/shop/LoginPromptToast";
@@ -23,15 +24,18 @@ export default function ShopPage() {
   const [activeCategory, setActiveCategory] = useState("");
   const [loading, setLoading] = useState(true);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [dealActive, setDealActive] = useState(false);
   const onNeedLogin = useCallback(() => setShowLoginPrompt(true), []);
 
   useEffect(() => {
     Promise.all([
       fetch("/api/categories").then((r) => r.json()),
       fetch("/api/products").then((r) => r.json()),
-    ]).then(([cats, prods]) => {
+      fetch("/api/deal-days/active").then((r) => r.json()),
+    ]).then(([cats, prods, deals]) => {
       if (cats.success) setCategories(cats.data);
       if (prods.success) setProducts(prods.data);
+      if (deals.success) setDealActive(!!(deals.data.active || deals.data.upcoming));
       setLoading(false);
     });
   }, []);
@@ -49,6 +53,18 @@ export default function ShopPage() {
     <div>
       {/* Category tabs */}
       <div className="flex gap-7 overflow-x-auto border-b border-gray-100 mb-8">
+        {dealActive && (
+          <Link
+            href="/deals"
+            className="shrink-0 pb-3 text-sm whitespace-nowrap border-b-2 -mb-px border-transparent font-semibold transition-colors flex items-center gap-1.5 text-amber-700 hover:text-amber-900"
+          >
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500" />
+            </span>
+            团购
+          </Link>
+        )}
         {[{ id: "", nameZh: "全部" }, ...categories].map((cat) => {
           const active = activeCategory === cat.id;
           return (

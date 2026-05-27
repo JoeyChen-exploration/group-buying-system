@@ -75,7 +75,7 @@ export default function CheckoutPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items: items.map(({ productId, variantId, quantity }) => ({ productId, variantId, quantity })),
+          items: items.map(({ productId, variantId, quantity, dealDayItemId, dealDayId }) => ({ productId, variantId, quantity, dealDayItemId, dealDayId })),
           fulfillmentMethod,
           deliveryArea: fulfillmentMethod === "delivery" ? deliveryArea : undefined,
           deliveryAddress: fulfillmentMethod === "delivery" ? deliveryAddress : undefined,

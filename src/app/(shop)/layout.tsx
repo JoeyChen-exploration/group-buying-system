@@ -16,20 +16,16 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
               <span className="text-[10px] text-gray-400 tracking-widest uppercase">Joy Taste Bakery</span>
             </Link>
             <div className="flex items-center gap-4">
-              <CartIcon />
+              <Link href="/menu" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">点单</Link>
               {session ? (
                 <>
                   <Link href="/orders" className="text-sm text-gray-400 hover:text-gray-900 transition-colors">我的订单</Link>
                   <Link href="/profile" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">{session.name}</Link>
-                  <form action="/api/auth/logout" method="POST">
-                    <button type="submit" className="text-sm text-gray-400 hover:text-gray-900 transition-colors">登出</button>
-                  </form>
                 </>
               ) : (
-                <Link href="/login" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">
-                  登录
-                </Link>
+                <Link href="/login" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">登录</Link>
               )}
+              <CartIcon />
             </div>
           </div>
         </header>

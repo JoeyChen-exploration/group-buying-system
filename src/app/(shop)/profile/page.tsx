@@ -151,6 +151,17 @@ export default function ProfilePage() {
           {saving ? "保存中..." : "保存"}
         </button>
       </form>
+
+      <div className="mt-4">
+        <form action="/api/auth/logout" method="POST">
+          <button
+            type="submit"
+            className="w-full bg-white border border-red-200 text-red-500 text-sm font-medium py-3 rounded-xl hover:bg-red-50 hover:border-red-300 transition-colors"
+          >
+            登出账号
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

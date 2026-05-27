@@ -5,6 +5,9 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/middleware/require-auth";
 import { ok, fail, serverError } from "@/lib/response";
 
+class OrderError extends Error {}
+
+
 export async function GET() {
   try {
     const { session, error } = await requireAuth();
@@ -40,6 +43,8 @@ const schema = z.object({
     productId: z.string(),
     variantId: z.string().optional(),
     quantity: z.number().int().positive(),
+    dealDayItemId: z.string().optional(),
+    dealDayId: z.string().optional(),
   })).min(1, "购物车不能为空"),
   fulfillmentMethod: z.enum(["pickup", "delivery"]),
   deliveryArea: z.string().optional(),
@@ -78,7 +83,37 @@ export async function POST(req: NextRequest) {
       if (!activeDealDay) return fail("目前不在优惠日配送时段内，只支持到店自取");
     }
 
-    // Batch-fetch and validate products + variants from DB
+    // Separate deal items from regular items
+    const dealItems = items.filter((i) => i.dealDayItemId);
+    const regularItems = items.filter((i) => !i.dealDayItemId);
+
+    // Validate deal day items
+    const dealDayItemMap = new Map<string, Awaited<ReturnType<typeof prisma.dealDayItem.findUnique>>>();
+    let activeDealDayId: string | null = null;
+    let activeDealDeliveryFeeOverride: number | null = null;
+
+    if (dealItems.length > 0) {
+      const now = new Date();
+      const activeDealDay = await prisma.dealDay.findFirst({
+        where: { isEnabled: true, activityStartAt: { lte: now }, activityEndAt: { gte: now } },
+      });
+      if (!activeDealDay) return fail("当前团购活动已结束，请刷新后重试");
+      activeDealDayId = activeDealDay.id;
+      activeDealDeliveryFeeOverride = Number(activeDealDay.deliveryFee);
+
+      const dealDayItemIds = dealItems.map((i) => i.dealDayItemId!);
+      const dbDealItems = await prisma.dealDayItem.findMany({
+        where: { id: { in: dealDayItemIds }, dealDayId: activeDealDay.id },
+      });
+      for (const di of dbDealItems) dealDayItemMap.set(di.id, di);
+      for (const { dealDayItemId } of dealItems) {
+        const di = dealDayItemMap.get(dealDayItemId!);
+        if (!di) return fail("部分团购商品不存在或已下架");
+        if (di.status !== "active") return fail(`"${dealDayItemId}" 商品暂停销售`);
+      }
+    }
+
+    // Batch-fetch regular products + variants
     const productIds = [...new Set(items.map((i) => i.productId))];
     const variantIds = [...new Set(items.filter((i) => i.variantId).map((i) => i.variantId!))];
 
@@ -95,7 +130,7 @@ export async function POST(req: NextRequest) {
     let subtotal = 0;
     const orderItems: Prisma.OrderItemUncheckedCreateWithoutOrderInput[] = [];
 
-    for (const { productId, variantId, quantity } of items) {
+    for (const { productId, variantId, quantity, dealDayItemId } of items) {
       const product = productMap.get(productId);
       if (!product) return fail("部分商品已下架或不存在，请刷新后重试");
 
@@ -103,13 +138,30 @@ export async function POST(req: NextRequest) {
       if (variantId && !variant) return fail("部分规格已下架或不存在，请刷新后重试");
       if (variant && variant.productId !== productId) return fail("规格与商品不匹配");
 
-      const unitPrice = Number(product.basePrice) + (variant ? Number(variant.priceDelta) : 0);
+      let unitPrice: number;
+      let isDealDayItem = false;
+
+      if (dealDayItemId) {
+        const di = dealDayItemMap.get(dealDayItemId)!;
+        if (di.remainingQuantity < quantity) {
+          return fail(`"${product.nameZh}" 剩余库存不足（剩余 ${di.remainingQuantity}）`);
+        }
+        if (di.perOrderLimit && quantity > di.perOrderLimit) {
+          return fail(`"${product.nameZh}" 每单限购 ${di.perOrderLimit} 件`);
+        }
+        unitPrice = Number(di.dealPrice);
+        isDealDayItem = true;
+      } else {
+        unitPrice = Number(product.basePrice) + (variant ? Number(variant.priceDelta) : 0);
+      }
+
       const lineTotal = unitPrice * quantity;
       subtotal += lineTotal;
 
       orderItems.push({
         productId,
         variantId: variantId ?? null,
+        dealDayItemId: dealDayItemId ?? null,
         productNameSnapshot: product.nameZh,
         variantSnapshot: variant
           ? { id: variant.id, nameZh: variant.nameZh, size: variant.size, flavor: variant.flavor, filling: variant.filling, priceDelta: Number(variant.priceDelta) }
@@ -117,43 +169,105 @@ export async function POST(req: NextRequest) {
         quantity,
         unitPrice,
         lineTotal,
-        isDealDayItem: false,
+        isDealDayItem,
       });
     }
 
     // Delivery fee & min-order check
     let deliveryFee = 0;
     if (fulfillmentMethod === "delivery") {
-      const rule = await prisma.deliveryRule.findFirst({ where: { areaName: deliveryArea, isEnabled: true } });
-      if (!rule) return fail("所选区域暂不支持配送，请选择其他区域");
-      if (subtotal < Number(rule.minOrderAmount)) {
-        return fail(`该区域最低起送金额为 $${Number(rule.minOrderAmount).toFixed(2)}，当前合计 $${subtotal.toFixed(2)}`);
+      if (activeDealDayId !== null) {
+        // Deal day orders use the deal day's delivery fee
+        deliveryFee = activeDealDeliveryFeeOverride ?? 0;
+      } else {
+        const rule = await prisma.deliveryRule.findFirst({ where: { areaName: deliveryArea, isEnabled: true } });
+        if (!rule) return fail("所选区域暂不支持配送，请选择其他区域");
+        if (subtotal < Number(rule.minOrderAmount)) {
+          return fail(`该区域最低起送金额为 $${Number(rule.minOrderAmount).toFixed(2)}，当前合计 $${subtotal.toFixed(2)}`);
+        }
+        deliveryFee = Number(rule.deliveryFee);
       }
-      deliveryFee = Number(rule.deliveryFee);
     }
 
     const totalAmount = subtotal + deliveryFee;
+    const hasDealItems = dealItems.length > 0;
+    const hasRegularItems = regularItems.length > 0;
+    const orderType = hasDealItems && hasRegularItems ? "mixed" : hasDealItems ? "deal_day" : "regular";
 
-    const order = await prisma.order.create({
-      data: {
-        orderNumber: generateOrderNumber(),
-        userId: session!.userId,
-        orderType: "regular",
-        status: "pending",
-        fulfillmentMethod,
-        subtotal,
-        deliveryFee,
-        totalAmount,
-        paymentMethod,
-        deliveryArea: deliveryArea ?? null,
-        deliveryAddress: deliveryAddress ?? null,
-        notes: notes ?? null,
-        items: { create: orderItems },
-      },
+    // Create order + decrement deal item stock atomically
+    // SELECT FOR UPDATE locks each deal_day_item row so concurrent requests queue up
+    const order = await prisma.$transaction(async (tx) => {
+      if (hasDealItems) {
+        for (const { dealDayItemId, quantity, productId } of dealItems) {
+          const product = productMap.get(productId)!;
+
+          // Lock the row — concurrent requests wait here until the lock is released
+          const [locked] = await tx.$queryRaw<Array<{ remaining_quantity: number; status: string }>>`
+            SELECT remaining_quantity, status FROM deal_day_items WHERE id = ${dealDayItemId} FOR UPDATE
+          `;
+
+          if (!locked || locked.status !== "active") {
+            throw new OrderError(`"${product.nameZh}" 商品已暂停销售，请刷新后重试`);
+          }
+          if (locked.remaining_quantity < quantity) {
+            throw new OrderError(
+              `"${product.nameZh}" 库存不足（剩余 ${locked.remaining_quantity} 件），请减少数量后重试`
+            );
+          }
+
+          // Enforce per-user limit
+          const diMeta = dealDayItemMap.get(dealDayItemId!);
+          if (diMeta?.perUserLimit) {
+            const [{ total }] = await tx.$queryRaw<Array<{ total: bigint }>>`
+              SELECT COALESCE(SUM(oi.quantity), 0) AS total
+              FROM order_items oi
+              JOIN orders o ON o.id = oi.order_id
+              WHERE oi.deal_day_item_id = ${dealDayItemId}
+                AND o.user_id = ${session!.userId}
+                AND o.status NOT IN ('cancelled')
+            `;
+            const alreadyBought = Number(total);
+            if (alreadyBought + quantity > diMeta.perUserLimit) {
+              throw new OrderError(
+                `"${product.nameZh}" 每人限购 ${diMeta.perUserLimit} 件，您已购买 ${alreadyBought} 件`
+              );
+            }
+          }
+
+          await tx.dealDayItem.update({
+            where: { id: dealDayItemId! },
+            data: {
+              soldQuantity: { increment: quantity },
+              remainingQuantity: { decrement: quantity },
+              ...(locked.remaining_quantity - quantity === 0 ? { status: "sold_out" } : {}),
+            },
+          });
+        }
+      }
+
+      return tx.order.create({
+        data: {
+          orderNumber: generateOrderNumber(),
+          userId: session!.userId,
+          orderType,
+          status: "pending",
+          fulfillmentMethod,
+          subtotal,
+          deliveryFee,
+          totalAmount,
+          paymentMethod,
+          dealDayId: activeDealDayId ?? null,
+          deliveryArea: deliveryArea ?? null,
+          deliveryAddress: deliveryAddress ?? null,
+          notes: notes ?? null,
+          items: { create: orderItems },
+        },
+      });
     });
 
     return ok({ orderId: order.id, orderNumber: order.orderNumber }, 201);
-  } catch {
+  } catch (e) {
+    if (e instanceof OrderError) return fail(e.message);
     return serverError();
   }
 }
